@@ -5,7 +5,7 @@ Ref. [Assistant Relay Installation](https://assistantrelay.com/docs/getting-star
 ## Installation
 1. Install node.js version 10.13.0 (using nvm)
 [nvm for window](https://github.com/coreybutler/nvm-windows)
-2. Install PM2 by `$ npm i pm2 -g`  (using powershell)
+2. Install PM2 by `$ npm i pm2 -g`  (using Windows PowerShell)
 3. Install Assistant Relay by download [Assistant Relay V3.2.0 release.zip](https://github.com/greghesp/assistant-relay/releases/download/v3.2.0/release.zip)
 4. Extract the folder and run `$ npm i` inside that folder <br>
 
@@ -21,7 +21,8 @@ Ref. [Assistant Relay Installation](https://assistantrelay.com/docs/getting-star
 
 ## Assistant Relay Setup
 12. Modify secret_client_xxx.json by changing "web" key to "installed"
-13. Run `$ npm run start` and open the Assistant Relay webpage on browser
+13. Run `$ npm run start` and open the Assistant Relay webpage on browser <br>
+Note: If error occurs, try kill running process `TASKKILL /F /IM node.exe /FI "PID gt 0"` (using Windows PowerShell)
 14. Upload secret_client_xxx.json to the webpage, add your user name and click next.
 15. It will pop up the Google Account linking page, authorize it with your Google Account
 16. It will now show the blank white page with some text on it. Copy the code in the url <br>
