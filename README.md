@@ -52,3 +52,7 @@ Note: When want to command the Device, "converse" must be false. <br>
 }
 ```
 
+## Demo Video
+
+1. Assistant Relay demo with Postman [Youtube link](https://youtu.be/vxcaF7yoIzQ)
+
