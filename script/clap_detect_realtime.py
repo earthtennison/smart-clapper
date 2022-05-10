@@ -115,5 +115,3 @@ if __name__ == "__main__":
     ani = FuncAnimation(fig, update_data, interval=30, blit=True)
     with stream:
         plt.show()
-
-
