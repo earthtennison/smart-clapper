@@ -12,9 +12,10 @@ class ClapDetector:
         # input stream
         self.stream = sd.InputStream(device=device, channels=1, samplerate=sf, callback=self.callback)
         self.input_queue = queue.Queue()
-        self.capacity = 10000
+        self.capacity = 50000
         self.size = 0
         self.buffer_data = np.zeros((self.capacity, 1), dtype=float)
+        self.expand_count = 0
         # visualize
         plot_len = int(sf * plot_interval / downsample)  # plot audio data only last 1 seconds
         self.plotdata = np.zeros(plot_len)
@@ -23,8 +24,9 @@ class ClapDetector:
 
         # for detection
         self.trigger = False
+        self.idx_count = 0
 
-    def plot_data(self):
+    def plot_wave(self):
         # display realtime plot
         fig, ax = plt.subplots()
         self.lines = ax.plot(self.plotdata)
@@ -42,6 +44,15 @@ class ClapDetector:
     def get_size(self):
         return self.size
 
+    def get_idx_count(self):
+        return self.idx_count
+
+    def clear_buffer(self):
+        self.capacity = 50000
+        self.buffer_data = np.zeros((self.capacity, 1), dtype=float)
+        self.idx_count = 0
+        self.size = 0
+
     def detect_clap(self):
 
         print("running clap detection in background...")
@@ -52,26 +63,27 @@ class ClapDetector:
         self.trigger = False
         idx_start = 0
         idx_stop = 0
-        idx_count = 0
+        self.idx_count = 0
         trigger_window_len = int(time_interval * fs)  # window to count the high amplitude sound
         clap_count = 0
         with self.stream:
             while True:
                 # get buffer_data from queue
-                if self.get_size() - idx_count < trigger_window_len:
+                # print(self.get_size())
+                if self.get_size() - self.get_idx_count() < trigger_window_len:
                     continue
                 else:
                     for i in range(trigger_window_len):
-                        s = self.buffer_data[idx_count + i]
+                        s = self.buffer_data[self.get_idx_count() + i]
                         if self.trigger:
                             if s > thres:
-                                idx_stop = idx_count + i
+                                idx_stop = self.get_idx_count() + i
                                 # print("{}: {:.2f}".format(i, s))
 
                         else:
                             if s > thres:
                                 self.trigger = True
-                                idx_start = idx_count
+                                idx_start = self.get_idx_count()
                                 # print("{}: {:.2f}".format(i, s))
 
                     # check clap sound
@@ -85,7 +97,7 @@ class ClapDetector:
 
                     # update variable
                     self.trigger = False
-                    idx_count += trigger_window_len
+                    self.idx_count += trigger_window_len
                     idx_start = 0
                     idx_stop = 0
 
@@ -112,15 +124,21 @@ class ClapDetector:
 
         # data for processing
         new_data_len = len(indata[:, 0])
-        self.size += new_data_len
-        if self.size > self.capacity:
-            self.capacity *= 4
-            print("add buffer size to {}".format(self.capacity))
-            expanded_buffer_data = np.zeros((self.capacity, 1))
-            expanded_buffer_data[:len(self.buffer_data)] = self.buffer_data
-            self.buffer_data = expanded_buffer_data
 
-        self.buffer_data[self.size - new_data_len:self.size] = indata[:, 0].reshape(-1, 1)
+        if self.size + new_data_len > self.capacity:
+            if self.expand_count < 5:
+                self.capacity *= 2
+                # print("add buffer size to {}".format(self.capacity))
+                expanded_buffer_data = np.zeros((self.capacity, 1))
+                expanded_buffer_data[:len(self.buffer_data)] = self.buffer_data
+                self.buffer_data = expanded_buffer_data
+                self.expand_count += 1
+            else:
+                # print("clear buffer")
+                self.clear_buffer()
+                self.expand_count = 0
+        self.buffer_data[self.size:self.size + new_data_len] = indata[:, 0].reshape(-1, 1)
+        self.size += new_data_len
 
 
 if __name__ == "__main__":
@@ -131,7 +149,7 @@ if __name__ == "__main__":
     cd.detect_clap()
 
     # TODO fix threading with plot
-    # t1 = threading.Thread(name="thread1", target=cd.plot_data)
+    # t1 = threading.Thread(name="thread1", target=cd.plot_wave)
     # t2 = threading.Thread(name="thread2", target=cd.detect_clap)
     # t1.start()
     # t2.start()
